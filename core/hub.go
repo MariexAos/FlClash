@@ -26,6 +26,7 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strconv"
+	"sync/atomic"
 	"time"
 )
 
@@ -33,6 +34,11 @@ var (
 	isInit            = false
 	externalProviders = map[string]cp.Provider{}
 	logSubscriber     observable.Subscription[log.Event]
+	// requestSubscribed gates push of RequestMessage events. Default
+	// false: no consumer (Connections > Requests page) is open, so
+	// statistic.DefaultRequestNotify drops the event before any
+	// serialization or socket write happens.
+	requestSubscribed atomic.Bool
 )
 
 func handleInitClash(paramsString string) bool {
@@ -459,6 +465,14 @@ func handleStopLog() {
 	}
 }
 
+func handleStartRequest() {
+	requestSubscribed.Store(true)
+}
+
+func handleStopRequest() {
+	requestSubscribed.Store(false)
+}
+
 func handleGetCountryCode(ip string, fn func(value string)) {
 	go func() {
 		runLock.Lock()
@@ -566,6 +580,13 @@ func init() {
 		})
 	}
 	statistic.DefaultRequestNotify = func(c statistic.Tracker) {
+		// Drop the event entirely if no Dart-side consumer subscribed.
+		// Without this gate, every connection during normal browsing
+		// triggers a JSON serialization + socket write that the UI
+		// throws away.
+		if !requestSubscribed.Load() {
+			return
+		}
 		sendMessage(Message{
 			Type: RequestMessage,
 			Data: c,

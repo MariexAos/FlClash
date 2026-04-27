@@ -1,4 +1,5 @@
 import 'package:fl_clash/common/common.dart';
+import 'package:fl_clash/core/controller.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/providers.dart';
@@ -38,6 +39,10 @@ class _RequestsViewState extends ConsumerState<RequestsView> {
   @override
   void initState() {
     super.initState();
+    // Subscribe so FlClashCore starts pushing RequestMessage events.
+    // Default in core is unsubscribed — events are dropped before
+    // serialization when no consumer wants them.
+    coreController.startRequest();
     _requests = ref.read(requestsProvider).list;
     _scrollController = ScrollController(initialScrollOffset: double.maxFinite);
     _requestsStateNotifier.value = _requestsStateNotifier.value.copyWith(
@@ -54,6 +59,7 @@ class _RequestsViewState extends ConsumerState<RequestsView> {
 
   @override
   void dispose() {
+    coreController.stopRequest();
     _requestsStateNotifier.dispose();
     _scrollController.dispose();
     super.dispose();
