@@ -39,6 +39,19 @@ class _WindowContainerState extends ConsumerState<WindowManager>
         });
       }
     });
+    // Hidden-window poll interval depends on whether tray title is shown.
+    // Tray-title users want a few-second refresh; otherwise keep it long
+    // so macOS App Nap can engage.
+    ref.listenManual(
+      appSettingProvider.select((state) => state.showTrayTitle),
+      (prev, next) {
+        globalState.hiddenInterval = next
+            ? const Duration(seconds: 3)
+            : const Duration(seconds: 30);
+        globalState.rescheduleUpdateTasks();
+      },
+      fireImmediately: true,
+    );
     windowExtManager.addListener(this);
     windowManager.addListener(this);
   }
@@ -54,6 +67,10 @@ class _WindowContainerState extends ConsumerState<WindowManager>
     super.onWindowFocus();
     commonPrint.log('focus');
     render?.resume();
+    // Drop chart history accumulated while hidden — its samples are
+    // 30s-spaced and would distort the chart's uniform-time-axis
+    // assumption when mixed with fresh 1s samples.
+    ref.read(trafficsProvider.notifier).clear();
     globalState.rescheduleUpdateTasks();
   }
 
@@ -96,6 +113,7 @@ class _WindowContainerState extends ConsumerState<WindowManager>
   void onWindowRestore() {
     commonPrint.log('restore');
     render?.resume();
+    ref.read(trafficsProvider.notifier).clear();
     globalState.rescheduleUpdateTasks();
     super.onWindowRestore();
   }

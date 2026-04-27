@@ -578,6 +578,7 @@ extension SetupControllerExt on AppController {
       await globalState.handleStop();
       coreController.resetTraffic();
       _ref.read(trafficsProvider.notifier).clear();
+      _ref.read(currentTrafficProvider.notifier).value = Traffic();
       _ref.read(totalTrafficProvider.notifier).value = Traffic();
       _ref.read(runTimeProvider.notifier).value = null;
       addCheckIp();
@@ -1137,7 +1138,16 @@ extension CommonControllerExt on AppController {
       appSettingProvider.select((state) => state.onlyStatisticsProxy),
     );
     final traffic = await coreController.getTraffic(onlyStatisticsProxy);
-    _ref.read(trafficsProvider.notifier).addTraffic(traffic);
+    // Always update current rate (tray title reads this and needs to
+    // stay fresh whether window is hidden or not).
+    _ref.read(currentTrafficProvider.notifier).value = traffic;
+    // Only append to chart history when window is visible. The chart
+    // assumes uniform 1s spacing between samples; 30s-spaced samples
+    // (when hidden) would distort that implicit X-axis.
+    final visible = await window?.isVisible ?? true;
+    if (visible) {
+      _ref.read(trafficsProvider.notifier).addTraffic(traffic);
+    }
     _ref.read(totalTrafficProvider.notifier).value = await coreController
         .getTotalTraffic(onlyStatisticsProxy);
   }

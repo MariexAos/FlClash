@@ -434,6 +434,59 @@ abstract class _$TotalTraffic extends $Notifier<Traffic> {
   }
 }
 
+@ProviderFor(CurrentTraffic)
+const currentTrafficProvider = CurrentTrafficProvider._();
+
+final class CurrentTrafficProvider
+    extends $NotifierProvider<CurrentTraffic, Traffic> {
+  const CurrentTrafficProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'currentTrafficProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$currentTrafficHash();
+
+  @$internal
+  @override
+  CurrentTraffic create() => CurrentTraffic();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(Traffic value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<Traffic>(value),
+    );
+  }
+}
+
+String _$currentTrafficHash() => r'0a502a844bb526d5bb3a555c48ea0438238e7b41';
+
+abstract class _$CurrentTraffic extends $Notifier<Traffic> {
+  Traffic build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<Traffic, Traffic>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<Traffic, Traffic>,
+              Traffic,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
+
 @ProviderFor(LocalIp)
 const localIpProvider = LocalIpProvider._();
 

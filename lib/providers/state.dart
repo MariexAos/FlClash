@@ -156,9 +156,10 @@ TrayTitleState trayTitleState(Ref ref) {
   final showTrayTitle = ref.watch(
     appSettingProvider.select((state) => state.showTrayTitle),
   );
-  final traffic = ref.watch(
-    trafficsProvider.select((state) => state.list.safeLast(Traffic())),
-  );
+  // Read from currentTrafficProvider (always fresh) instead of
+  // trafficsProvider.list.last (which is the chart history, only
+  // appended when window is visible).
+  final traffic = ref.watch(currentTrafficProvider);
   return TrayTitleState(showTrayTitle: showTrayTitle, traffic: traffic);
 }
 

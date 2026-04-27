@@ -100,6 +100,14 @@ class TotalTraffic extends _$TotalTraffic with AutoDisposeNotifierMixin {
 }
 
 @Riverpod(keepAlive: true)
+class CurrentTraffic extends _$CurrentTraffic with AutoDisposeNotifierMixin {
+  @override
+  Traffic build() {
+    return Traffic();
+  }
+}
+
+@Riverpod(keepAlive: true)
 class LocalIp extends _$LocalIp with AutoDisposeNotifierMixin {
   @override
   String? build() {

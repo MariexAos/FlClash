@@ -43,6 +43,10 @@ class GlobalState {
   DateTime? startTime;
   UpdateTasks tasks = [];
   final Set<FutureOr Function()> _pageTasks = {};
+  // Polling interval when window is hidden. 3s when tray title needs
+  // fresh data, 30s when no live UI is visible (lets macOS App Nap
+  // engage). Updated externally via setHiddenInterval.
+  Duration hiddenInterval = const Duration(seconds: 30);
   SetupState? lastSetupState;
   VpnState? lastVpnState;
 
@@ -129,9 +133,7 @@ class GlobalState {
     }
     await executorUpdateTask();
     final visible = await window?.isVisible ?? true;
-    final interval = visible
-        ? const Duration(seconds: 1)
-        : const Duration(seconds: 30);
+    final interval = visible ? const Duration(seconds: 1) : hiddenInterval;
     timer = Timer(interval, () async {
       startUpdateTasks();
     });
