@@ -1,8 +1,7 @@
-import 'dart:async';
-
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/core/controller.dart';
 import 'package:fl_clash/models/models.dart';
+import 'package:fl_clash/state.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,8 +21,6 @@ class _ConnectionsViewState extends ConsumerState<ConnectionsView> {
     const TrackerInfosState(),
   );
   final ScrollController _scrollController = ScrollController();
-
-  Timer? timer;
 
   List<Widget> _buildActions() {
     return [
@@ -49,24 +46,15 @@ class _ConnectionsViewState extends ConsumerState<ConnectionsView> {
     );
   }
 
-  Future<void> _updateConnectionsTask() async {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (mounted) {
-        await _updateConnections();
-        timer = Timer(Duration(seconds: 1), () async {
-          _updateConnectionsTask();
-        });
-      }
-    });
-  }
-
   @override
   void initState() {
     super.initState();
-    _updateConnectionsTask();
+    globalState.addTask(_updateConnections);
+    _updateConnections();
   }
 
   Future<void> _updateConnections() async {
+    if (!mounted) return;
     _connectionsStateNotifier.value = _connectionsStateNotifier.value.copyWith(
       trackerInfos: await coreController.getConnections(),
     );
@@ -79,10 +67,9 @@ class _ConnectionsViewState extends ConsumerState<ConnectionsView> {
 
   @override
   void dispose() {
-    timer?.cancel();
+    globalState.removeTask(_updateConnections);
     _connectionsStateNotifier.dispose();
     _scrollController.dispose();
-    timer = null;
     super.dispose();
   }
 

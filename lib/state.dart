@@ -42,6 +42,7 @@ class GlobalState {
   CorePalette? corePalette;
   DateTime? startTime;
   UpdateTasks tasks = [];
+  final Set<FutureOr Function()> _pageTasks = {};
   SetupState? lastSetupState;
   VpnState? lastVpnState;
 
@@ -110,22 +111,37 @@ class GlobalState {
     return container;
   }
 
+  void addTask(FutureOr Function() task) {
+    _pageTasks.add(task);
+  }
+
+  void removeTask(FutureOr Function() task) {
+    _pageTasks.remove(task);
+  }
+
   Future<void> startUpdateTasks([UpdateTasks? tasks]) async {
     if (timer != null && timer!.isActive == true) return;
     if (tasks != null) {
       this.tasks = tasks;
     }
-    if (this.tasks.isEmpty) {
+    if (this.tasks.isEmpty && _pageTasks.isEmpty) {
       return;
     }
     await executorUpdateTask();
-    timer = Timer(const Duration(seconds: 1), () async {
+    final visible = await window?.isVisible ?? true;
+    final interval = visible
+        ? const Duration(seconds: 1)
+        : const Duration(seconds: 30);
+    timer = Timer(interval, () async {
       startUpdateTasks();
     });
   }
 
   Future<void> executorUpdateTask() async {
     for (final task in tasks) {
+      await task();
+    }
+    for (final task in _pageTasks.toList()) {
       await task();
     }
     timer = null;
@@ -135,6 +151,12 @@ class GlobalState {
     if (timer == null || timer?.isActive == false) return;
     timer?.cancel();
     timer = null;
+  }
+
+  void rescheduleUpdateTasks() {
+    if (timer == null) return;
+    stopUpdateTasks();
+    startUpdateTasks();
   }
 
   Future<void> handleStart([UpdateTasks? tasks]) async {

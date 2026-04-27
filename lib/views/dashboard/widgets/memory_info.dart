@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:fl_clash/common/common.dart';
@@ -17,32 +16,27 @@ class MemoryInfo extends StatefulWidget {
 }
 
 class _MemoryInfoState extends State<MemoryInfo> {
-  Timer? timer;
-
   @override
   void initState() {
     super.initState();
+    globalState.addTask(_updateMemory);
     _updateMemory();
   }
 
   @override
   void dispose() {
-    timer?.cancel();
+    globalState.removeTask(_updateMemory);
     super.dispose();
   }
 
   Future<void> _updateMemory() async {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final rss = ProcessInfo.currentRss;
-      if (coreController.isCompleted) {
-        _memoryStateNotifier.value = await coreController.getMemory() + rss;
-      } else {
-        _memoryStateNotifier.value = rss;
-      }
-      timer = Timer(Duration(seconds: 2), () async {
-        _updateMemory();
-      });
-    });
+    if (!mounted) return;
+    final rss = ProcessInfo.currentRss;
+    if (coreController.isCompleted) {
+      _memoryStateNotifier.value = await coreController.getMemory() + rss;
+    } else {
+      _memoryStateNotifier.value = rss;
+    }
   }
 
   @override
